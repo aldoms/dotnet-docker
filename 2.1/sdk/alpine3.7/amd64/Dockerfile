@@ -22,9 +22,19 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps
 
 # Enable correct mode for dotnet watch (only mode supported in a container)
-ENV DOTNET_USE_POLLING_FILE_WATCHER=true \ 
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true \
     # Skip extraction of XML docs - generally not useful within an image/container - helps perfomance
     NUGET_XMLDOC_MODE=skip
 
 # Trigger first run experience by running arbitrary cmd to populate local package cache
 RUN dotnet help
+
+# Install the Microsoft Credential Provider
+ENV CREDENTIAL_PROVIDER_VERSION 0.1.2
+
+RUN wget -O credentialProvider.tar.gz https://github.com/Microsoft/mscredprovider/releases/download/v$CREDENTIAL_PROVIDER_VERSION/Microsoft.CredentialProvider.$CREDENTIAL_PROVIDER_VERSION.tar.gz \
+    && mkdir -p /usr/share/credential-provider \
+    && tar -C /usr/share/credential-provider -xzf credentialProvider.tar.gz \
+    && rm credentialProvider.tar.gz
+
+ENV NUGET_PLUGIN_PATHS=/usr/share/credential-provider/plugins/netcore/CredentialProvider.Microsoft/CredentialProvider.Microsoft.dll

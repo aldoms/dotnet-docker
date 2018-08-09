@@ -30,3 +30,12 @@ ENV ASPNETCORE_URLS=http://+:80 `
 
 # Trigger first run experience by running arbitrary cmd to populate local package cache
 RUN dotnet help
+
+# Install the Microsoft Credential Provider
+ENV CREDENTIAL_PROVIDER_VERSION 0.1.2
+
+RUN Invoke-WebRequest -OutFile credentialProvider.zip https://github.com/Microsoft/mscredprovider/releases/download/v$Env:CREDENTIAL_PROVIDER_VERSION/Microsoft.CredentialProvider.$Env:CREDENTIAL_PROVIDER_VERSION.zip; `
+RUN Expand-Archive credentialProvider.zip -DestinationPath $Env:ProgramFiles\MicrosoftCredentialProvider; `
+    Remove-Item -Force credentialProvider.zip
+
+RUN setx /M NUGET_PLUGIN_PATHS $($Env:ProgramFiles + '\MicrosoftCredentialProvider\plugins\netcore\CredentialProvider.Microsoft\CredentialProvider.Microsoft.dll')

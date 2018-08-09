@@ -111,6 +111,7 @@ namespace Microsoft.DotNet.Docker.Tests
                 if (!imageData.HasNoSdk)
                 {
                     VerifySdkImage_PackageCache(imageData);
+                    VerifySdkImage_ContainsCredentialProvider(imageData);
 
                     // TODO: Skip running app in arm + web configuration to workaround https://github.com/dotnet/cli/issues/9162
                     if (!(imageData.IsArm && imageData.IsWeb))
@@ -206,6 +207,28 @@ namespace Microsoft.DotNet.Docker.Tests
                 image: GetDotNetImage(DotNetImageType.SDK, imageData),
                 command: verifyCacheCommand,
                 containerName: GetIdentifier(imageData.DotNetVersion, "PackageCache"));
+        }
+
+        private void VerifySdkImage_ContainsCredentialProvider(ImageData imageData)
+        {
+            string verifyProviderCommand;
+            if (imageData.DotNetVersion.StartsWith("2.1"))
+            {
+                if (DockerHelper.IsLinuxContainerModeEnabled)
+                {
+                    verifyProviderCommand = "test -d /root/.nuget/plugins/netcore/CredentialProvider.Microsoft";
+                }
+                else
+                {
+                    verifyProviderCommand = "CMD /S /C PUSHD \"C:\\Users\\ContainerAdministrator\\.nuget\\plugins\\netcore\\CredentialProvider.Microsoft\"";
+                }
+
+                // Simple check to verify the NuGet package cache was created
+                _dockerHelper.Run(
+                    image: GetDotNetImage(DotNetImageType.SDK, imageData),
+                    command: verifyProviderCommand,
+                    containerName: GetIdentifier(imageData.DotNetVersion, "PackageCache"));
+            }
         }
 
         private async Task VerifyRuntimeImage_FrameworkDependentApp(ImageData imageData, string appSdkImage)
